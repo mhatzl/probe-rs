@@ -52,7 +52,7 @@ impl Channel {
     const O_FLAGS: usize = 20;
 
     pub(crate) fn from(
-        core: &mut Core,
+        core: &mut dyn MemoryInterface,
         number: usize,
         memory_map: &[MemoryRegion],
         ptr: u32,
@@ -81,7 +81,7 @@ impl Channel {
 
         Ok(Some(Channel {
             number,
-            core_id: core.id(),
+            core_id: 0,
             ptr,
             name,
             buffer_ptr,
@@ -90,11 +90,11 @@ impl Channel {
     }
 
     /// Validate that the Core id of a request is the same as the Core id against which the Channel was created.
-    pub(crate) fn validate_core_id(&self, core: &mut Core) -> Result<(), Error> {
-        if core.id() == self.core_id {
+    pub(crate) fn validate_core_id(&self, core: &mut dyn MemoryInterface) -> Result<(), Error> {
+        if 0 == self.core_id {
             Ok(())
         } else {
-            Err(Error::IncorrectCoreSpecified(self.core_id, core.id()))
+            Err(Error::IncorrectCoreSpecified(self.core_id, 0))
         }
     }
 
@@ -106,7 +106,7 @@ impl Channel {
         self.size as usize
     }
 
-    fn read_pointers(&self, core: &mut Core, dir: &'static str) -> Result<(u32, u32), Error> {
+    fn read_pointers(&self, core: &mut dyn MemoryInterface, dir: &'static str) -> Result<(u32, u32), Error> {
         self.validate_core_id(core)?;
         let mut block = [0u32; 2];
         core.read_32((self.ptr + Self::O_WRITE as u32).into(), block.as_mut())?;
@@ -161,7 +161,7 @@ impl UpChannel {
     /// Reads the current channel mode from the target and returns its.
     ///
     /// See [`ChannelMode`] for more information on what the modes mean.
-    pub fn mode(&self, core: &mut Core) -> Result<ChannelMode, Error> {
+    pub fn mode(&self, core: &mut dyn MemoryInterface) -> Result<ChannelMode, Error> {
         self.0.validate_core_id(core)?;
 
         let flags = core.read_word_32((self.0.ptr + Channel::O_FLAGS as u32).into())?;
@@ -179,7 +179,7 @@ impl UpChannel {
     /// Changes the channel mode on the target to the specified mode.
     ///
     /// See [`ChannelMode`] for more information on what the modes mean.
-    pub fn set_mode(&self, core: &mut Core, mode: ChannelMode) -> Result<(), Error> {
+    pub fn set_mode(&self, core: &mut dyn MemoryInterface, mode: ChannelMode) -> Result<(), Error> {
         self.0.validate_core_id(core)?;
         let flags = core.read_word_32((self.0.ptr + Channel::O_FLAGS as u32).into())?;
 
@@ -189,7 +189,7 @@ impl UpChannel {
         Ok(())
     }
 
-    fn read_core(&self, core: &mut Core, mut buf: &mut [u8]) -> Result<(u32, usize), Error> {
+    fn read_core(&self, core: &mut dyn MemoryInterface, mut buf: &mut [u8]) -> Result<(u32, usize), Error> {
         self.0.validate_core_id(core)?;
         let (write, mut read) = self.0.read_pointers(core, "up")?;
 
@@ -223,7 +223,7 @@ impl UpChannel {
     ///
     /// This method will not block waiting for data in the target buffer, and may read less bytes
     /// than would fit in `buf`.
-    pub fn read(&self, core: &mut Core, buf: &mut [u8]) -> Result<usize, Error> {
+    pub fn read(&self, core: &mut dyn MemoryInterface, buf: &mut [u8]) -> Result<usize, Error> {
         self.0.validate_core_id(core)?;
         let (read, total) = self.read_core(core, buf)?;
 
@@ -240,7 +240,7 @@ impl UpChannel {
     ///
     /// The difference from [`read`](UpChannel::read) is that this does not discard the data in the
     /// buffer.
-    pub fn peek(&self, core: &mut Core, buf: &mut [u8]) -> Result<usize, Error> {
+    pub fn peek(&self, core: &mut dyn MemoryInterface, buf: &mut [u8]) -> Result<usize, Error> {
         self.0.validate_core_id(core)?;
         Ok(self.read_core(core, buf)?.1)
     }
@@ -294,7 +294,7 @@ impl DownChannel {
     ///
     /// This method will not block waiting for space to become available in the channel buffer, and
     /// may not write all of `buf`.
-    pub fn write(&self, core: &mut Core, mut buf: &[u8]) -> Result<usize, Error> {
+    pub fn write(&self, core: &mut dyn MemoryInterface, mut buf: &[u8]) -> Result<usize, Error> {
         self.0.validate_core_id(core)?;
         let (mut write, read) = self.0.read_pointers(core, "down")?;
 
@@ -359,7 +359,7 @@ impl RttChannel for DownChannel {
 
 /// Reads a null-terminated string from target memory. Lossy UTF-8 decoding is used.
 fn read_c_string(
-    core: &mut Core,
+    core: &mut dyn MemoryInterface,
     memory_map: &[MemoryRegion],
     ptr: u32,
 ) -> Result<Option<String>, Error> {

@@ -4,7 +4,7 @@ use defmt_decoder::DecodeError;
 use num_traits::Zero;
 pub use probe_rs::rtt::ChannelMode;
 use probe_rs::rtt::{DownChannel, Rtt, ScanRegion, UpChannel};
-use probe_rs::Core;
+use probe_rs::{Core, MemoryInterface};
 use probe_rs_target::MemoryRegion;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -19,7 +19,7 @@ use std::{
 use time::{OffsetDateTime, UtcOffset};
 
 pub fn attach_to_rtt(
-    core: &mut Core,
+    core: &mut dyn MemoryInterface,
     memory_map: &[MemoryRegion],
     scan_regions: &[std::ops::Range<u64>],
     elf_file: &Path,
@@ -219,7 +219,7 @@ impl RttActiveChannel {
 
     /// Polls the RTT target for new data on the channel represented by `self`.
     /// Processes all the new data into the channel internal buffer and returns the number of bytes that was read.
-    pub fn poll_rtt(&mut self, core: &mut Core) -> Option<usize> {
+    pub fn poll_rtt(&mut self, core: &mut dyn MemoryInterface) -> Option<usize> {
         if let Some(channel) = self.up_channel.as_mut() {
             // Retry loop, in case the probe is temporarily unavailable, e.g. user pressed the `reset` button.
             for _loop_count in 0..10 {
@@ -250,7 +250,7 @@ impl RttActiveChannel {
     /// Non-recoverable errors are propagated to the caller.
     pub fn get_rtt_data(
         &mut self,
-        core: &mut Core,
+        core: &mut dyn MemoryInterface,
         defmt_state: Option<&DefmtState>,
     ) -> Result<Option<(String, String)>, anyhow::Error> {
         self.poll_rtt(core)
@@ -275,7 +275,7 @@ impl RttActiveChannel {
             .transpose()
     }
 
-    pub fn _push_rtt(&mut self, core: &mut Core) {
+    pub fn _push_rtt(&mut self, core: &mut dyn MemoryInterface) {
         if let Some(down_channel) = self.down_channel.as_mut() {
             self._input_data += "\n";
             down_channel
@@ -528,7 +528,7 @@ impl RttActiveTarget {
     /// An error on any channel will return an error instead of incomplete data.
     pub fn poll_rtt_fallible(
         &mut self,
-        core: &mut Core,
+        core: &mut dyn MemoryInterface,
     ) -> Result<HashMap<String, String>, anyhow::Error> {
         let defmt_state = self.defmt_state.as_ref();
         let mut data = HashMap::new();

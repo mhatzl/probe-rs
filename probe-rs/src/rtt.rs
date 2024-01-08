@@ -121,7 +121,7 @@ impl Rtt {
     const O_CHANNEL_ARRAYS: usize = 24;
 
     fn from(
-        core: &mut Core,
+        core: &mut dyn MemoryInterface,
         memory_map: &[MemoryRegion],
         // Pointer from which to scan
         ptr: u32,
@@ -217,7 +217,7 @@ impl Rtt {
     /// if a valid control block was found.
     ///
     /// `core` can be e.g. an owned `Core` or a shared `Rc<Core>`.
-    pub fn attach(core: &mut Core, memory_map: &[MemoryRegion]) -> Result<Rtt, Error> {
+    pub fn attach(core: &mut dyn MemoryInterface, memory_map: &[MemoryRegion]) -> Result<Rtt, Error> {
         Self::attach_region(core, memory_map, &Default::default())
     }
 
@@ -226,7 +226,7 @@ impl Rtt {
     ///
     /// `core` can be e.g. an owned `Core` or a shared `Rc<Core>`.
     pub fn attach_region(
-        core: &mut Core,
+        core: &mut dyn MemoryInterface,
         memory_map: &[MemoryRegion],
         region: &ScanRegion,
     ) -> Result<Rtt, Error> {
