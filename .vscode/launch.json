@@ -99,6 +99,20 @@
     {
       "type": "lldb",
       "request": "launch",
+      "name": "xmc attach",
+      "cargo": {
+        "args": ["build", "--bin=probe-rs", "--features=cli"],
+        "filter": {
+          "name": "probe-rs",
+          "kind": "bin"
+        }
+      },
+      "args": ["attach", "--chip", "XMC4700-F144x2048", "../tests/xmc-test/target/thumbv7em-none-eabihf/debug/hello"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
       "name": "display dap-server debug subcommand help text",
       "cargo": {
         "args": ["build", "--bin=probe-rs", "--features=cli"],

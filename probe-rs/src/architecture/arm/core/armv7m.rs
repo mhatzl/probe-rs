@@ -827,6 +827,20 @@ impl<'probe> CoreInterface for Armv7m<'probe> {
     }
 
     fn step(&mut self) -> Result<CoreInformation, Error> {
+
+        if !self.state.current_state.is_halted() {
+            // core must be halted to read "pc_before_step" below
+            let mut dhcsr = Dhcsr(self.memory.read_word_32(Dhcsr::get_mmio_address())?);
+            dhcsr.set_c_step(true);
+            dhcsr.set_c_halt(false);
+            dhcsr.enable_write();
+            self.memory
+                .write_word_32(Dhcsr::get_mmio_address(), dhcsr.into())?;
+            self.memory.flush()?;
+
+            self.wait_for_core_halted(Duration::from_millis(1000))?;
+        }
+
         // First check if we stopped on a breakpoint, because this requires special handling before we can continue.
         let pc_before_step = self.read_core_reg(self.program_counter().into())?;
         let was_breakpoint = if matches!(
