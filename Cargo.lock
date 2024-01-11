@@ -2988,6 +2988,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtt-com"
+version = "0.22.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "defmt-decoder",
+ "goblin",
+ "kmp",
+ "num-traits",
+ "probe-rs-target",
+ "scroll",
+ "serde",
+ "thiserror",
+ "time",
+ "tracing",
+]
+
+[[package]]
 name = "rtthost"
 version = "0.22.0"
 dependencies = [

@@ -1,0 +1,27 @@
+[package]
+name = "rtt-com"
+description = "RTT (Real-Time Transfer) client"
+version.workspace = true
+edition.workspace = true
+license = "MIT"
+repository.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+probe-rs-target = { workspace = true }
+thiserror = { workspace = true }
+tracing = { version = "0.1.40", features = ["log"] }
+scroll = "0.12.0"
+serde = { version = "1", features = ["derive"] }
+kmp = "0.1"
+num-traits = "0.2.17"
+defmt-decoder = { version = "0.3.9", features = ["unstable"] }
+goblin = { version = "0.8.0" }
+clap = { version = "4.4", features = ["derive", "env"] }
+time = { version = "0.3", default-features = false, features = [
+    "alloc",
+    "formatting",
+    "large-dates",
+    "macros",
+    "local-offset",
+]}
